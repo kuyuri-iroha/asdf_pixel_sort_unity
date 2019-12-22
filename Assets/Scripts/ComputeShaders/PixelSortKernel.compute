@@ -1,0 +1,97 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel PixelSortKernelHorizontal
+#pragma kernel PixelSortKernelVertical
+
+RWTexture2D<float4> src;
+RWTexture2D<float4> dest;
+
+float iteration;
+float brightnessThreshold;
+
+bool IsEven(float x)
+{
+    return fmod(x, 2) == 0;
+}
+
+float Rgb2Gray( float3 color )
+{
+    return 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+}
+
+[numthreads(1024, 1, 1)]
+void PixelSortKernelHorizontal(uint3 id : SV_GroupThreadID, uint3 groupId : SV_GroupID)
+{
+    uint width = 0u;
+    uint height = 0u;
+    src.GetDimensions(width, height);
+    if(width < 2048u)
+    {
+        if(width <= id.x * 2u)
+            return;
+        
+        uint2 index = uint2(id.x * 2u + (IsEven(iteration) ? 0u : 1u), groupId.y);
+        uint2 nextIndex = uint2((index.x + 1u) < width ? index.x + 1 : index.x, groupId.y);
+  
+        float3 currCol = src[index].rgb;
+        float curr = Rgb2Gray(currCol);
+
+        float3 nextCol = src[nextIndex].rgb;
+        float next = Rgb2Gray(nextCol);
+
+        bool isInThreshold = curr < brightnessThreshold && next < brightnessThreshold;
+
+        if (next < curr && isInThreshold)
+        {
+            dest[index] = float4(nextCol, 1.0);
+            dest[nextIndex] = float4(currCol, 1.0);
+        }
+        else if (index.x == nextIndex.x)
+        {
+            dest[index] = float4(currCol, 1.0);
+        }
+        else
+        {
+            dest[index] = float4(currCol, 1.0);
+            dest[nextIndex] = float4(nextCol, 1.0);
+        }
+    }
+}
+
+[numthreads(1, 1024, 1)]
+void PixelSortKernelVertical(uint3 id : SV_GroupThreadID, uint3 groupId : SV_GroupID)
+{
+    uint width = 0u;
+    uint height = 0u;
+    src.GetDimensions(width, height);
+    if(height < 2048u)
+    {
+        if(height <= id.x * 2u)
+            return;
+        
+        uint2 index = uint2(groupId.x, id.y * 2u + (IsEven(iteration) ? 0u : 1u));
+        uint2 nextIndex = uint2(groupId.x, (index.y + 1u) < height ? index.y + 1 : index.y);
+  
+        float3 currCol = src[index].rgb;
+        float curr = Rgb2Gray(currCol);
+
+        float3 nextCol = src[nextIndex].rgb;
+        float next = Rgb2Gray(nextCol);
+
+        bool isInThreshold = (brightnessThreshold < curr && brightnessThreshold < next) || brightnessThreshold == 0.0;
+
+        if (curr < next && isInThreshold)
+        {
+            dest[index] = float4(nextCol, 1.0);
+            dest[nextIndex] = float4(currCol, 1.0);
+        }
+        else if (index.y == nextIndex.y)
+        {
+            dest[index] = float4(currCol, 1.0);
+        }
+        else
+        {
+            dest[index] = float4(currCol, 1.0);
+            dest[nextIndex] = float4(nextCol, 1.0);
+        }
+    }
+}
