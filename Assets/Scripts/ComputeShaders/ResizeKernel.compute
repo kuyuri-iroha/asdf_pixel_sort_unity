@@ -1,0 +1,144 @@
+﻿#pragma kernel Bilinear32x32
+#pragma kernel Bilinear16x16
+#pragma kernel Bilinear8x8
+#pragma kernel NearestNeighbor32x32
+#pragma kernel NearestNeighbor16x16
+#pragma kernel NearestNeighbor8x8
+#pragma kernel Bicubic32x32
+#pragma kernel Bicubic16x16
+#pragma kernel Bicubic8x8
+
+Texture2D<float4> src;
+RWTexture2D<float4> dest;
+
+float sharpness;
+
+// Bilinear
+void BilinearInterpolation(uint2 id)
+{
+    uint2 srcSize;
+    src.GetDimensions(srcSize.x, srcSize.y);
+    
+    uint2 destSize;
+    dest.GetDimensions(destSize.x, destSize.y);
+    
+    if(destSize.x <= id.x || destSize.y <= id.y)
+        return;
+    
+    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    float sx = sampleUint.x / 2.0;
+    float sy = sampleUint.y / 2.0;
+    
+    float4 c0 = src[uint2(sampleUint.x * id.x, sampleUint.y * id.y)];
+    float4 c1 = src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y), srcSize)];
+    float4 c2 = src[min(uint2(sampleUint.x * id.x, sampleUint.y * id.y + sy), srcSize)];
+    float4 c3 = src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y + sy), srcSize)];
+    
+    dest[id.xy] = (c0 + c1 + c2 + c3) / 4.0;
+}
+
+[numthreads(32, 32, 1)]
+void Bilinear32x32(uint3 id : SV_DispatchThreadID)
+{
+    BilinearInterpolation(id.xy);
+}
+
+[numthreads(16, 16, 1)]
+void Bilinear16x16(uint3 id : SV_DispatchThreadID)
+{
+    BilinearInterpolation(id.xy);
+}
+
+[numthreads(8, 8, 1)]
+void Bilinear8x8(uint3 id : SV_DispatchThreadID)
+{
+    BilinearInterpolation(id.xy);
+}
+
+// Nearest neighbor
+void NearestNeighborInterpolation(uint2 id)
+{
+    uint2 srcSize;
+    src.GetDimensions(srcSize.x, srcSize.y);
+    
+    uint2 destSize;
+    dest.GetDimensions(destSize.x, destSize.y);
+    
+    if(destSize.x <= id.x || destSize.y <= id.y)
+        return;
+    
+    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    
+    dest[id.xy] = src[min(uint2(sampleUint.x * id.x, sampleUint.y * id.y), srcSize)];
+}
+
+[numthreads(32, 32, 1)]
+void NearestNeighbor32x32(uint3 id : SV_DispatchThreadID)
+{
+    NearestNeighborInterpolation(id.xy);
+}
+
+[numthreads(16, 16, 1)]
+void NearestNeighbor16x16(uint3 id : SV_DispatchThreadID)
+{
+    NearestNeighborInterpolation(id.xy);
+}
+
+[numthreads(8, 8, 1)]
+void NearestNeighbor8x8(uint3 id : SV_DispatchThreadID)
+{
+    NearestNeighborInterpolation(id.xy);
+}
+
+// Bicubic
+void BicubicInterpolation(uint2 id)
+{
+    uint2 srcSize;
+    src.GetDimensions(srcSize.x, srcSize.y);
+    
+    uint2 destSize;
+    dest.GetDimensions(destSize.x, destSize.y);
+    
+    if(destSize.x <= id.x || destSize.y <= id.y)
+        return;
+    
+    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    const uint S = 1u;
+    
+    float a = lerp(-1.0, -0.5, sharpness);
+    float4 color = float4(0.0, 0.0, 0.0, 0.0);
+    float weightSum = 0.0;
+    for(int sx = 0; sx < 4; sx++)
+    {
+        for(int sy = 0; sy < 4; sy++)
+        {
+            float d = sqrt((sx - 1.0) * (sx - 1.0) + (sy - 1.0) * (sy - 1.0));
+            float weight = d <= 1.0 ? (1.0 - (a + 3.0) * (d*d) + (a + 2.0) * (d*d*d)) : 
+                            d <= 2.0 ? (-4.0 * a + 8.0 * a * d - 5.0 * a * (d*d) + a * (d*d*d)) : 0.0;
+            //weight = 1.0 / 16.0;
+            
+            color += src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y + sy), srcSize)] * weight;
+            weightSum += weight;
+        }
+    }
+    
+    dest[id.xy] = color / weightSum;
+}
+
+[numthreads(32, 32, 1)]
+void Bicubic32x32(uint3 id : SV_DispatchThreadID)
+{
+    BicubicInterpolation(id.xy);
+}
+
+[numthreads(16, 16, 1)]
+void Bicubic16x16(uint3 id : SV_DispatchThreadID)
+{
+    BicubicInterpolation(id.xy);
+}
+
+[numthreads(8, 8, 1)]
+void Bicubic8x8(uint3 id : SV_DispatchThreadID)
+{
+    BicubicInterpolation(id.xy);
+}

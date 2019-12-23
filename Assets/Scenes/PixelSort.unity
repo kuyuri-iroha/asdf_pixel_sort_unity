@@ -652,3 +652,8 @@ MonoBehaviour:
   sorterKernel: {fileID: 7200000, guid: f977785c7e8b3bf4d946c2c1544d0601, type: 3}
   src: {fileID: 2800000, guid: d3dd1ff2826f64748bbc50f16958a6a3, type: 3}
   brightnessThreshold: 1
+  resizeKernel: {fileID: 7200000, guid: 7a1a21612d96e1944b6cd0d1815afe23, type: 3}
+  widthScale: 0.3
+  heightScale: 0.3
+  resizeMethod: 0
+  sharpness: 0.5

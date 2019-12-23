@@ -38,7 +38,7 @@ void PixelSortKernelHorizontal(uint3 id : SV_GroupThreadID, uint3 groupId : SV_G
         float3 nextCol = src[nextIndex].rgb;
         float next = Rgb2Gray(nextCol);
 
-        bool isInThreshold = curr < brightnessThreshold && next < brightnessThreshold;
+        bool isInThreshold = brightnessThreshold < curr && brightnessThreshold < next || brightnessThreshold == 0.0;
 
         if (next < curr && isInThreshold)
         {
@@ -65,7 +65,7 @@ void PixelSortKernelVertical(uint3 id : SV_GroupThreadID, uint3 groupId : SV_Gro
     src.GetDimensions(width, height);
     if(height < 2048u)
     {
-        if(height <= id.x * 2u)
+        if(height <= id.y * 2u)
             return;
         
         uint2 index = uint2(groupId.x, id.y * 2u + (IsEven(iteration) ? 0u : 1u));
