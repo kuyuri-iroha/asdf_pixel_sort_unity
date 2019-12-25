@@ -119,14 +119,15 @@ public class PixelSort : MonoBehaviour
 
         resizedSrc = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32) {enableRandomWrite = true};
         resizedSrc.Create();
+
+        resizeKernel.SetTexture(resizeKernelIndex, "src", src);
+        resizeKernel.SetTexture(resizeKernelIndex, "dest", resizedSrc);
     }
 
     // Update is called once per frame
     void Update()
     {
         resizeKernel.SetFloat("sharpness", sharpness);
-        resizeKernel.SetTexture(resizeKernelIndex, "src", src);
-        resizeKernel.SetTexture(resizeKernelIndex, "dest", resizedSrc);
         resizeKernel.Dispatch(resizeKernelIndex, groupNumX, groupNumY, 1);
 
         Graphics.CopyTexture(resizedSrc, buffers[0]);

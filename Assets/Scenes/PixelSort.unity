@@ -655,5 +655,5 @@ MonoBehaviour:
   resizeKernel: {fileID: 7200000, guid: 7a1a21612d96e1944b6cd0d1815afe23, type: 3}
   widthScale: 0.3
   heightScale: 0.3
-  resizeMethod: 0
-  sharpness: 0.5
+  resizeMethod: 6
+  sharpness: 0.483

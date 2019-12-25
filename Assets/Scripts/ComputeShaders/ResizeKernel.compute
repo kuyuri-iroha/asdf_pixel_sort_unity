@@ -25,14 +25,14 @@ void BilinearInterpolation(uint2 id)
     if(destSize.x <= id.x || destSize.y <= id.y)
         return;
     
-    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
-    float sx = sampleUint.x / 2.0;
-    float sy = sampleUint.y / 2.0;
+    float2 sampleUnit = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    float sx = sampleUnit.x / 2.0;
+    float sy = sampleUnit.y / 2.0;
     
-    float4 c0 = src[uint2(sampleUint.x * id.x, sampleUint.y * id.y)];
-    float4 c1 = src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y), srcSize)];
-    float4 c2 = src[min(uint2(sampleUint.x * id.x, sampleUint.y * id.y + sy), srcSize)];
-    float4 c3 = src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y + sy), srcSize)];
+    float4 c0 = src[uint2(sampleUnit.x * id.x, sampleUnit.y * id.y)];
+    float4 c1 = src[min(uint2(sampleUnit.x * id.x + sx, sampleUnit.y * id.y), srcSize)];
+    float4 c2 = src[min(uint2(sampleUnit.x * id.x, sampleUnit.y * id.y + sy), srcSize)];
+    float4 c3 = src[min(uint2(sampleUnit.x * id.x + sx, sampleUnit.y * id.y + sy), srcSize)];
     
     dest[id.xy] = (c0 + c1 + c2 + c3) / 4.0;
 }
@@ -67,9 +67,9 @@ void NearestNeighborInterpolation(uint2 id)
     if(destSize.x <= id.x || destSize.y <= id.y)
         return;
     
-    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    float2 sampleUnit = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
     
-    dest[id.xy] = src[min(uint2(sampleUint.x * id.x, sampleUint.y * id.y), srcSize)];
+    dest[id.xy] = src[min(uint2(sampleUnit.x * id.x, sampleUnit.y * id.y), srcSize)];
 }
 
 [numthreads(32, 32, 1)]
@@ -102,7 +102,7 @@ void BicubicInterpolation(uint2 id)
     if(destSize.x <= id.x || destSize.y <= id.y)
         return;
     
-    float2 sampleUint = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
+    float2 sampleUnit = float2(float(srcSize.x) / destSize.x, float(srcSize.y) / destSize.y);
     const uint S = 1u;
     
     float a = lerp(-1.0, -0.5, sharpness);
@@ -115,9 +115,8 @@ void BicubicInterpolation(uint2 id)
             float d = sqrt((sx - 1.0) * (sx - 1.0) + (sy - 1.0) * (sy - 1.0));
             float weight = d <= 1.0 ? (1.0 - (a + 3.0) * (d*d) + (a + 2.0) * (d*d*d)) : 
                             d <= 2.0 ? (-4.0 * a + 8.0 * a * d - 5.0 * a * (d*d) + a * (d*d*d)) : 0.0;
-            //weight = 1.0 / 16.0;
             
-            color += src[min(uint2(sampleUint.x * id.x + sx, sampleUint.y * id.y + sy), srcSize)] * weight;
+            color += src[min(uint2(sampleUnit.x * id.x + sx, sampleUnit.y * id.y + sy), srcSize)] * weight;
             weightSum += weight;
         }
     }
